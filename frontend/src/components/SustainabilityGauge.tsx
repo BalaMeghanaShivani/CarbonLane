@@ -5,7 +5,7 @@ interface SustainabilityGaugeProps {
 }
 
 const SustainabilityGauge = ({ score }: SustainabilityGaugeProps) => {
-    const clamped = Math.max(0, Math.min(100, score));
+    const clamped = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0;
 
     const data = [
         { name: 'Score', value: clamped },

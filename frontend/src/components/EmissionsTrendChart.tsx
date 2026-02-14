@@ -7,15 +7,16 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import type { TrendData } from '../types';
+import type { EmissionsTimeseriesPoint } from '../types';
 
 interface Props {
-    data: TrendData[];
+    data: EmissionsTimeseriesPoint[];
 }
 
 const EmissionsTrendChart = ({ data }: Props) => (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
         <h3 className="mb-4 text-lg font-medium text-white">Hourly Carbon Emissions</h3>
+        <p className="mb-4 text-xs text-slate-500">Last 1 hour from latest exit time · 5-min buckets</p>
         <div className="h-[340px]">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data}>
@@ -26,16 +27,17 @@ const EmissionsTrendChart = ({ data }: Props) => (
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="hour" stroke="#94a3b8" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#94a3b8" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+                    <XAxis dataKey="time" stroke="#94a3b8" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#94a3b8" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} tickFormatter={(v) => `${v} kg`} />
                     <Tooltip
                         contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '10px' }}
                         itemStyle={{ color: '#e2e8f0' }}
+                        formatter={(value: number) => [`${value} kg`, 'CO₂']}
                     />
                     <Area
                         type="monotone"
-                        dataKey="total_idle_seconds"
-                        name="Idle Seconds"
+                        dataKey="co2_kg"
+                        name="CO₂"
                         stroke="#10b981"
                         strokeWidth={2.5}
                         fillOpacity={1}

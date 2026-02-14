@@ -1,34 +1,60 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { fetchHotspots } from '../api/client';
+import Loader from './Loader';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const hours = Array.from({ length: 24 }, (_, i) => i);
 
-// Generate stable pseudo-random data seeded by day+hour
-function intensity(day: number, hour: number): number {
-    const isPeak = (hour >= 8 && hour <= 9) || (hour >= 17 && hour <= 18);
-    const isWeekend = day >= 5;
-    const seed = Math.sin(day * 24 + hour + 1) * 10000;
-    let base = (seed - Math.floor(seed)) * 0.35;
-    if (isPeak && !isWeekend) base += 0.55;
-    if (isWeekend) base *= 0.5;
-    return Math.min(1, base);
-}
-
-function cellColor(v: number): string {
-    if (v < 0.3) return 'bg-emerald-900/50';
-    if (v < 0.6) return 'bg-yellow-600/50';
+function cellColor(intensity: number): string {
+    if (intensity < 0.3) return 'bg-emerald-900/50';
+    if (intensity < 0.6) return 'bg-yellow-600/50';
     return 'bg-red-500/70';
 }
 
 const CarbonHeatmap = () => {
-    const grid = useMemo(() =>
-        days.map((_, di) => hours.map(h => intensity(di, h))),
-        []
-    );
+    const [grid, setGrid] = useState<number[][] | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadHotspots = useCallback(() => {
+        fetchHotspots()
+            .then(({ grid: g }) => {
+                if (g && g.length === 7 && g.every(row => row.length === 24)) {
+                    setGrid(g);
+                } else {
+                    setGrid(Array(7).fill(null).map(() => Array(24).fill(0)));
+                }
+                setError(null);
+            })
+            .catch((err) => {
+                console.error(err);
+                setError('Failed to load hotspots');
+                setGrid(Array(7).fill(null).map(() => Array(24).fill(0)));
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
+    useEffect(() => {
+        loadHotspots();
+        const id = setInterval(loadHotspots, 5 * 60 * 1000);
+        return () => clearInterval(id);
+    }, [loadHotspots]);
+
+    const maxCo2 = grid ? Math.max(...grid.flat(), 0.001) : 1;
+    const intensityGrid = grid
+        ? grid.map(row => row.map(co2 => co2 / maxCo2))
+        : [];
+
+    const now = new Date();
+    const currentDay = (now.getDay() + 6) % 7;
+    const currentHour = now.getHours();
+
+    if (loading && !grid) return <Loader />;
 
     return (
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
             <h3 className="mb-5 text-lg font-medium text-white">Carbon Hotspot Heatmap</h3>
+            {error && <p className="mb-4 text-sm text-amber-400">{error}</p>}
 
             {/* Hour labels */}
             <div className="mb-1 flex gap-1 pl-10 text-[10px] text-slate-500">
@@ -43,13 +69,14 @@ const CarbonHeatmap = () => {
                     <div key={day} className="flex items-center gap-1">
                         <span className="w-9 shrink-0 text-xs font-medium text-slate-400">{day}</span>
                         <div className="grid flex-1 grid-cols-24 gap-[3px]">
-                            {grid[di].map((v, hi) => {
-                                const co2 = Math.round(v * 100);
+                            {(intensityGrid[di] ?? Array(24).fill(0)).map((intensity, hi) => {
+                                const co2Kg = grid?.[di]?.[hi] ?? 0;
+                                const isCurrent = di === currentDay && hi === currentHour;
                                 return (
                                     <div
                                         key={hi}
-                                        title={`${day} ${hi}:00 — ${co2} kg CO₂`}
-                                        className={`h-5 w-full rounded-sm transition-transform hover:scale-125 cursor-pointer ${cellColor(v)}`}
+                                        title={`${day} ${hi}:00 — ${co2Kg.toFixed(2)} kg CO₂${isCurrent ? ' (now)' : ''}`}
+                                        className={`h-5 w-full rounded-sm transition-transform hover:scale-125 cursor-pointer ${cellColor(intensity)} ${isCurrent ? 'ring-2 ring-white' : ''}`}
                                     />
                                 );
                             })}

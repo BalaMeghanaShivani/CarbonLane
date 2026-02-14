@@ -1,20 +1,19 @@
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const defaultData = [
-    { range: '0–60s', count: 450 },
-    { range: '60–120s', count: 320 },
-    { range: '120–180s', count: 180 },
-    { range: '180s+', count: 80 },
+    { range: '<5 mins', count: 0 },
+    { range: '5-10 mins', count: 0 },
+    { range: '10+ mins', count: 0 },
 ];
 
-const COLORS = ['#10b981', '#34d399', '#facc15', '#f87171'];
+const COLORS = ['#10b981', '#34d399', '#f87171'];
 
 interface Props {
     data?: { range: string; count: number }[];
 }
 
 const IdleDistributionChart = ({ data }: Props) => {
-    const chartData = data || defaultData;
+    const chartData = data && data.length > 0 ? data : defaultData;
 
     return (
         <div className="h-full rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">

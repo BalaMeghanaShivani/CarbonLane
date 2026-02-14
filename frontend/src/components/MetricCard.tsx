@@ -11,7 +11,7 @@ interface MetricCardProps {
 
 const MetricCard = ({ title, value, unit, icon, trend, subtitle }: MetricCardProps) => {
     return (
-        <div className="group rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg transition hover:shadow-emerald-500/10">
+        <div className="group flex min-h-[140px] min-w-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg transition hover:shadow-emerald-500/10">
             <div className="flex items-start justify-between">
                 <p className="text-sm font-medium text-slate-400">{title}</p>
                 {icon && (
@@ -21,9 +21,9 @@ const MetricCard = ({ title, value, unit, icon, trend, subtitle }: MetricCardPro
                 )}
             </div>
 
-            <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-4xl font-bold tracking-tight text-white">{value}</span>
-                {unit && <span className="text-sm text-slate-500">{unit}</span>}
+            <div className="mt-3 flex min-w-0 items-baseline gap-2">
+                <span className="min-w-0 truncate text-4xl font-bold tracking-tight text-white whitespace-nowrap">{value}</span>
+                {unit && <span className="shrink-0 text-sm text-slate-500">{unit}</span>}
             </div>
 
             {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}

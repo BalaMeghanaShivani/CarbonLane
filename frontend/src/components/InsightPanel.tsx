@@ -13,11 +13,16 @@ const InsightPanel = ({ trends }: InsightPanelProps) => {
     const highIdleCount = trends.filter(t => t.total_idle_seconds > 4000).length;
     const highIdlePct = Math.round((highIdleCount / trends.length) * 100);
 
+    const toHourRange = (hourStr: string) => {
+        const h = parseInt(hourStr.split(':')[0], 10);
+        const nextH = (h + 1) % 24;
+        return `${hourStr} – ${String(nextH).padStart(2, '0')}:00`;
+    };
+
     const insights = [
-        `Peak emissions window: ${peakEntry.hour}:00 – ${peakEntry.hour}:59`,
-        `Lowest emissions hour: ${lowestEntry.hour}:00`,
+        `Peak emissions window: ${toHourRange(peakEntry.hour)}`,
+        `Lowest emissions window: ${toHourRange(lowestEntry.hour)}`,
         `${highIdlePct}% of monitored hours exceed high-idle threshold`,
-        'Consider adding staff or dual-lane routing during peak congestion.',
     ];
 
     return (
