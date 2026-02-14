@@ -1,0 +1,52 @@
+[
+    {
+        "hour": "08:00",
+        "total_cars": 45,
+        "total_idle_seconds": 1200
+    },
+    {
+        "hour": "09:00",
+        "total_cars": 120,
+        "total_idle_seconds": 3500
+    },
+    {
+        "hour": "10:00",
+        "total_cars": 150,
+        "total_idle_seconds": 4200
+    },
+    {
+        "hour": "11:00",
+        "total_cars": 110,
+        "total_idle_seconds": 2800
+    },
+    {
+        "hour": "12:00",
+        "total_cars": 90,
+        "total_idle_seconds": 2100
+    },
+    {
+        "hour": "13:00",
+        "total_cars": 100,
+        "total_idle_seconds": 2400
+    },
+    {
+        "hour": "14:00",
+        "total_cars": 130,
+        "total_idle_seconds": 3100
+    },
+    {
+        "hour": "15:00",
+        "total_cars": 160,
+        "total_idle_seconds": 4500
+    },
+    {
+        "hour": "16:00",
+        "total_cars": 180,
+        "total_idle_seconds": 5100
+    },
+    {
+        "hour": "17:00",
+        "total_cars": 170,
+        "total_idle_seconds": 4800
+    }
+]
