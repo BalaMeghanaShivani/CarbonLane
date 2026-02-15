@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BarChart3, Map, SlidersHorizontal } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Map, Leaf, SlidersHorizontal } from 'lucide-react';
 
 const links = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/analytics', label: 'Analytics', icon: BarChart3 },
     { to: '/hotspots', label: 'Hotspots', icon: Map },
+    { to: '/go-carbon-neutral', label: 'Go Carbon Neutral', icon: Leaf },
     { to: '/simulator', label: 'Simulator', icon: SlidersHorizontal },
 ];
 

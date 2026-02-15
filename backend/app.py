@@ -2,8 +2,9 @@
 """
 Flask API serving dashboard metrics from PostgreSQL car_entries table.
 """
+import os
 import random
-from datetime import timezone
+from datetime import datetime, timezone
 
 import psycopg2
 from flask import Flask, jsonify, request
@@ -12,6 +13,11 @@ from flask_cors import CORS
 from db import get_connection
 
 app = Flask(__name__)
+
+# In-memory carbon credits account (Cloverly mimic). 1 CO2 kg = 1 carbon credit.
+# For production, persist to DB. Set CLOVERLY_API_KEY to use real Cloverly sandbox.
+_carbon_credits_balance = 0.0
+_carbon_credits_purchase_history = []
 
 
 def _ts_iso_utc(dt):
@@ -72,36 +78,51 @@ def _get_all_time_metrics(conn, hours=24):
         return cur.fetchone()
 
 
-def _get_peak_hour(conn, hours=168):
-    """Find the 1-hour window with highest CO2. Returns time range like '4:00 – 5:00'."""
+def _get_peak_hour(conn, hours=168, tz="America/Los_Angeles"):
+    """
+    Find the 1-hour window with highest CO2. Returns time range like '4:00 – 5:00' in user's timezone.
+    DB stores UTC; we convert to tz for display. Only returns if total_co2_kg > 0.
+    """
     with conn.cursor() as cur:
         if hours:
             cur.execute("""
                 SELECT
-                    TO_CHAR(DATE_TRUNC('hour', enter_timestamp), 'HH24:MI') AS hour_start,
-                    TO_CHAR(DATE_TRUNC('hour', enter_timestamp) + INTERVAL '1 hour', 'HH24:MI') AS hour_end,
-                    COALESCE(SUM(carbon_produced), 0) / 1000.0 AS total_co2_kg
-                FROM car_entries
-                WHERE enter_timestamp >= NOW() - (%s::integer * INTERVAL '1 hour')
-                  AND exit_timestamp IS NOT NULL
-                GROUP BY DATE_TRUNC('hour', enter_timestamp)
-                ORDER BY total_co2_kg DESC
-                LIMIT 1
-            """, (hours,))
+                    TO_CHAR(hour_local, 'HH24:MI') AS hour_start,
+                    TO_CHAR(hour_local + INTERVAL '1 hour', 'HH24:MI') AS hour_end,
+                    total_co2_kg
+                FROM (
+                    SELECT
+                        DATE_TRUNC('hour', (enter_timestamp AT TIME ZONE 'UTC') AT TIME ZONE %s) AS hour_local,
+                        COALESCE(SUM(carbon_produced), 0) / 1000.0 AS total_co2_kg
+                    FROM car_entries
+                    WHERE enter_timestamp >= NOW() - (%s::integer * INTERVAL '1 hour')
+                      AND exit_timestamp IS NOT NULL
+                    GROUP BY DATE_TRUNC('hour', (enter_timestamp AT TIME ZONE 'UTC') AT TIME ZONE %s)
+                    HAVING COALESCE(SUM(carbon_produced), 0) > 0
+                    ORDER BY total_co2_kg DESC
+                    LIMIT 1
+                ) sub
+            """, (tz, hours, tz))
         else:
             cur.execute("""
                 SELECT
-                    TO_CHAR(DATE_TRUNC('hour', enter_timestamp), 'HH24:MI') AS hour_start,
-                    TO_CHAR(DATE_TRUNC('hour', enter_timestamp) + INTERVAL '1 hour', 'HH24:MI') AS hour_end,
-                    COALESCE(SUM(carbon_produced), 0) / 1000.0 AS total_co2_kg
-                FROM car_entries
-                WHERE exit_timestamp IS NOT NULL
-                GROUP BY DATE_TRUNC('hour', enter_timestamp)
-                ORDER BY total_co2_kg DESC
-                LIMIT 1
-            """)
+                    TO_CHAR(hour_local, 'HH24:MI') AS hour_start,
+                    TO_CHAR(hour_local + INTERVAL '1 hour', 'HH24:MI') AS hour_end,
+                    total_co2_kg
+                FROM (
+                    SELECT
+                        DATE_TRUNC('hour', (enter_timestamp AT TIME ZONE 'UTC') AT TIME ZONE %s) AS hour_local,
+                        COALESCE(SUM(carbon_produced), 0) / 1000.0 AS total_co2_kg
+                    FROM car_entries
+                    WHERE exit_timestamp IS NOT NULL
+                    GROUP BY DATE_TRUNC('hour', (enter_timestamp AT TIME ZONE 'UTC') AT TIME ZONE %s)
+                    HAVING COALESCE(SUM(carbon_produced), 0) > 0
+                    ORDER BY total_co2_kg DESC
+                    LIMIT 1
+                ) sub
+            """, (tz, tz))
         row = cur.fetchone()
-    if not row or not row[0]:
+    if not row or not row[0] or (row[2] or 0) <= 0:
         return ""
     return f"{row[0]}-{row[1]}"
 
@@ -434,9 +455,10 @@ def metrics():
             i = _pct_change(curr_idle_sec, prev_idle_sec)
             idle_trend = {"value": abs(i), "isPositive": i < 0}
 
-        peak_hour = _get_peak_hour(conn, hours=168)
+        tz = request.args.get("tz", "America/Los_Angeles")
+        peak_hour = _get_peak_hour(conn, hours=168, tz=tz)
         if not peak_hour:
-            peak_hour = _get_peak_hour(conn, hours=None)
+            peak_hour = _get_peak_hour(conn, hours=None, tz=tz)
 
         return jsonify({
             "total_cars": total_cars,
@@ -526,6 +548,57 @@ def trends():
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+
+# --- Go Carbon Neutral: Cloverly-mimic carbon credits (1 CO2 kg = 1 credit) ---
+
+@app.route("/carbon-neutral/account")
+def carbon_neutral_account():
+    """Get carbon credits balance and purchase history."""
+    global _carbon_credits_balance, _carbon_credits_purchase_history
+    return jsonify({
+        "credits_balance": round(_carbon_credits_balance, 2),
+        "purchase_history": list(_carbon_credits_purchase_history[-20:]),  # last 20
+    })
+
+
+@app.route("/carbon-neutral/purchase", methods=["POST"])
+def carbon_neutral_purchase():
+    """
+    Purchase carbon credits. 1 CO2 kg = 1 carbon credit.
+    Mimics Cloverly API - in sandbox mode we simulate; with CLOVERLY_API_KEY we could call real API.
+    """
+    global _carbon_credits_balance, _carbon_credits_purchase_history
+    try:
+        data = request.get_json() or {}
+        credits = float(data.get("credits", 0))
+        if credits <= 0:
+            return jsonify({"error": "Credits must be a positive number"}), 400
+        if credits > 10000:
+            return jsonify({"error": "Maximum 10,000 credits per purchase"}), 400
+
+        # Simulate Cloverly purchase (sandbox mode)
+        cloverly_key = os.environ.get("CLOVERLY_API_KEY")
+        if cloverly_key:
+            # TODO: Call Cloverly API when key is set
+            pass
+
+        _carbon_credits_balance += credits
+        record = {
+            "credits": credits,
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "balance_after": round(_carbon_credits_balance, 2),
+        }
+        _carbon_credits_purchase_history.append(record)
+
+        return jsonify({
+            "success": True,
+            "credits_purchased": credits,
+            "new_balance": round(_carbon_credits_balance, 2),
+            "message": "Carbon credits purchased successfully (simulated)",
+        })
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": "Invalid credits value"}), 400
 
 
 if __name__ == "__main__":

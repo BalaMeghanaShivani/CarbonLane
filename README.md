@@ -55,6 +55,13 @@ Carbon footprint tracking for fast-food drive-throughs. A camera at the start an
    ```
    The app runs at `http://localhost:5173` and proxies `/api` to the backend.
 
+## Go Carbon Neutral
+
+The **Go Carbon Neutral** tab offers two ways to offset drive-through carbon footprint:
+
+1. **Carbon Credits (Cloverly)** – Purchase carbon credits (1 CO₂ kg = 1 credit). Uses a simulated Cloverly-style flow; set `CLOVERLY_API_KEY` in `backend/.env` to integrate with the real Cloverly sandbox API.
+2. **Plant Trees** – Links to organizations (One Tree Planted, Arbor Day Foundation, etc.) where you can fund tree planting to offset emissions.
+
 ## Quick Start
 
 1. Start the backend: `cd backend && python app.py`

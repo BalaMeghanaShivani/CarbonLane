@@ -87,4 +87,21 @@ export const fetchTrends = async (): Promise<TrendData[]> => {
     return response.data;
 };
 
+// --- Go Carbon Neutral: Cloverly-mimic carbon credits ---
+
+export interface CarbonCreditsAccount {
+    credits_balance: number;
+    purchase_history: { credits: number; timestamp: string; balance_after: number }[];
+}
+
+export const fetchCarbonCreditsAccount = async (): Promise<CarbonCreditsAccount> => {
+    const response = await apiClient.get<CarbonCreditsAccount>('/carbon-neutral/account');
+    return response.data;
+};
+
+export const purchaseCarbonCredits = async (credits: number): Promise<{ success: boolean; credits_purchased: number; new_balance: number }> => {
+    const response = await apiClient.post('/carbon-neutral/purchase', { credits });
+    return response.data;
+};
+
 export default apiClient;
