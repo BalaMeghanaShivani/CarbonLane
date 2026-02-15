@@ -7,9 +7,14 @@ interface MetricCardProps {
     icon?: ReactNode;
     trend?: { value: number; isPositive: boolean };
     subtitle?: string;
+    /** Use "sm" for longer values (e.g. time ranges) to prevent truncation */
+    valueSize?: 'default' | 'sm';
 }
 
-const MetricCard = ({ title, value, unit, icon, trend, subtitle }: MetricCardProps) => {
+const MetricCard = ({ title, value, unit, icon, trend, subtitle, valueSize = 'default' }: MetricCardProps) => {
+    const valueClassName = valueSize === 'sm'
+        ? 'min-w-0 text-2xl font-bold tracking-tight text-white break-words'
+        : 'min-w-0 truncate text-4xl font-bold tracking-tight text-white whitespace-nowrap';
     return (
         <div className="group flex min-h-[140px] min-w-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg transition hover:shadow-emerald-500/10">
             <div className="flex items-start justify-between">
@@ -22,7 +27,7 @@ const MetricCard = ({ title, value, unit, icon, trend, subtitle }: MetricCardPro
             </div>
 
             <div className="mt-3 flex min-w-0 items-baseline gap-2">
-                <span className="min-w-0 truncate text-4xl font-bold tracking-tight text-white whitespace-nowrap">{value}</span>
+                <span className={valueClassName}>{value}</span>
                 {unit && <span className="shrink-0 text-sm text-slate-500">{unit}</span>}
             </div>
 

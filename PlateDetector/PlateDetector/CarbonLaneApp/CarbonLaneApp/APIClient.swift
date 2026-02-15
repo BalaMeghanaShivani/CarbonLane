@@ -8,7 +8,7 @@ class APIClient {
     // Change this to your Flask backend URL.
     // If running locally: use your Mac's IP (find it in System Settings > Wi-Fi > Details > IP Address)
     // Example: "http://192.168.1.42:8000"
-    static let baseURL = "http://10.0.0.35:8000"
+    static let baseURL = "http://172.20.10.2:8000"
 
     // MARK: - Car Entry (plate detected entering)
     static func recordCarEntry(numberplate: String, completion: @escaping (Bool, String?) -> Void) {

@@ -3,6 +3,7 @@
 
 import AVFoundation
 import UIKit
+import Combine
 
 protocol CameraManagerDelegate: AnyObject {
     func cameraManager(_ manager: CameraManager, didOutput pixelBuffer: CVPixelBuffer)
@@ -70,6 +71,11 @@ class CameraManager: NSObject, ObservableObject {
 
             if self.captureSession.canAddOutput(videoOutput) {
                 self.captureSession.addOutput(videoOutput)
+
+                // Force portrait orientation for the data stream
+                if let connection = videoOutput.connection(with: .video), connection.isVideoOrientationSupported {
+                    connection.videoOrientation = .portrait
+                }
             }
 
             self.captureSession.commitConfiguration()

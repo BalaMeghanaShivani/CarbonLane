@@ -26,7 +26,8 @@ export const fetchMetrics = async (): Promise<Metrics> => {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return mockMetrics as Metrics;
     }
-    const response = await apiClient.get<Metrics>('/metrics');
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles';
+    const response = await apiClient.get<Metrics>('/metrics', { params: { tz } });
     return response.data;
 };
 

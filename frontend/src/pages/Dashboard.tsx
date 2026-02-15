@@ -43,7 +43,7 @@ const Dashboard = () => {
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
                     <MetricCard title="Total Vehicles" value={(metrics?.total_cars ?? 0).toLocaleString()} icon={<Car className="h-4 w-4" />} />
                     <MetricCard title="Avg Idle Time" value={Number(metrics?.avg_idle_minutes ?? 0).toFixed(1)} unit="min" icon={<Clock className="h-4 w-4" />} />
-                    <MetricCard title="Peak Hour" value={derived?.peakHour ?? '—'} icon={<Activity className="h-4 w-4" />} subtitle="1hr window with highest CO₂" />
+                    <MetricCard title="Peak Hour" value={derived?.peakHour ?? '—'} icon={<Activity className="h-4 w-4" />} subtitle="1hr window with highest CO₂" valueSize="sm" />
                     <MetricCard title="Cars in Drive-Through" value={Number(metrics?.cars_in_drive_through ?? 0).toLocaleString()} icon={<MapPin className="h-4 w-4" />} subtitle="Currently waiting (no exit yet)" />
                 </div>
             </section>
